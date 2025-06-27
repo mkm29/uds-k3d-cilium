@@ -2,7 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.1.0] 2025-06-27
+## [0.1.1] - 2025-06-27
+
+### Fixed
+
+- Fixed Cilium installation by using the Cilium CLI directly instead of `zarf tools helm install`
+  - `zarf tools helm` is a subset of Helm CLI that only includes repo and dependency management commands
+  - The `install` command is not available in `zarf tools helm`, which was causing deployment failures
+  - Now uses `cilium install` command with `--values` flag for custom configuration
+
+### Changed
+
+- Updated installation method from Helm-based to Cilium CLI-based installation
+- Removed unnecessary helm repo add command as Cilium CLI manages this internally
+
+## [0.1.0] - 2025-06-27
 
 ### Added
 

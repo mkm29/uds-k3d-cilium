@@ -58,6 +58,7 @@ The UDS k3d Cilium package creates a k3d cluster with the following features:
 
 - [UDS CLI](https://uds.defenseunicorns.com/reference/cli/quickstart-and-usage/#install): version 0.20.0 or later
 - [k3d](https://k3d.io/#installation): version 5.7.1 or later
+- [Cilium CLI](https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/#install-cilium-cli): version 0.16.0 or later (required for installation)
 - [Docker](https://docs.docker.com/get-docker/) or [Podman](https://podman.io/getting-started/installation) for running k3d
 
 ### System Requirements
@@ -173,6 +174,9 @@ The following components are available in the UDS k3d Cilium package:
 
 > [!NOTE]
 > Cilium provides built-in L2 announcements for LoadBalancer services, replacing the need for MetalLB. The Cilium Ingress Controller is enabled by default.
+
+> [!IMPORTANT]
+> The package uses the Cilium CLI for installation rather than Helm, as `zarf tools helm` only includes repo and dependency management commands, not the full Helm CLI functionality. Ensure the Cilium CLI is installed before deployment.
 
 | Name | Description | Required |
 |------|-------------|:--------:|

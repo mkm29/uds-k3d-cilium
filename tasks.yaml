@@ -15,17 +15,17 @@ variables:
 
 tasks:
   - name: build
-    description: "Build uds-k3d-calico package"
+    description: "Build uds-k3d-cilium package"
     actions:
       - description: "Build UDS K3d package"
         cmd: "uds zarf package create -a ${ARCH} --confirm --no-progress --skip-sbom"
 
   - name: deploy
-    description: "Deploy uds-k3d-calico package"
+    description: "Deploy uds-k3d-cilium package"
     actions:
       - description: "Deploy UDS K3d package"
         cmd: |
-          uds zarf package deploy zarf-package-uds-k3d-calico-${ARCH}-*.tar.zst \
+          uds zarf package deploy zarf-package-uds-k3d-cilium-${ARCH}-*.tar.zst \
             --set K3D_IMAGE=${IMAGE_NAME}:${VERSION} \
             --set K3D_EXTRA_ARGS="${K3D_EXTRA_ARGS}" \
             --set NGINX_EXTRA_PORTS="${NGINX_EXTRA_PORTS}" \
@@ -53,11 +53,11 @@ tasks:
             echo "  uds run destroy --set CLUSTER_NAME=<cluster-name>"
             echo ""
             echo "Example:"
-            echo "  uds run destroy --set CLUSTER_NAME=uds-calico"
+            echo "  uds run destroy --set CLUSTER_NAME=uds-cilium"
           fi
 
   - name: validate
-    description: "Validate the uds-k3d-calico package"
+    description: "Validate the uds-k3d-cilium package"
     actions:
       - task: validate-coredns
       - cmd: uds zarf tools download-init --no-progress
@@ -65,7 +65,7 @@ tasks:
       - task: validate-zarf-init
 
   - name: validate-airgap
-    description: "Validate the uds-k3d-calico package in airgap mode"
+    description: "Validate the uds-k3d-cilium package in airgap mode"
     actions:
       - task: validate-coredns
       - task: validate-zarf-init
@@ -102,7 +102,7 @@ tasks:
           uds zarf init --confirm --no-progress
 
   - name: build-airgap-package
-    description: "Build the airgap package for uds-k3d-calico"
+    description: "Build the airgap package for uds-k3d-cilium"
     actions:
       - description: Build the airgap package
         cmd: |
@@ -113,11 +113,11 @@ tasks:
         task: clean-airgap-images
 
   - name: deploy-airgap-package
-    description: "Deploy the airgap package for uds-k3d-calico"
+    description: "Deploy the airgap package for uds-k3d-cilium"
     actions:
       - description: Deploy the airgap package
         cmd: |
-          uds zarf package deploy zarf-package-uds-k3d-calico-${ARCH}-*.tar.zst --no-progress --confirm
+          uds zarf package deploy zarf-package-uds-k3d-cilium-${ARCH}-*.tar.zst --no-progress --confirm
 
   - name: clean-airgap-images
     description: "Clean up airgap images after deployment"

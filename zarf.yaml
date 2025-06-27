@@ -201,8 +201,7 @@ components:
               done
           - description: Install Cilium with eBPF
             cmd: |
-              ./zarf tools helm repo add cilium https://helm.cilium.io/ --force-update
-              ./zarf tools helm install -f values/cilium-values.yaml --version ${ZARF_VAR_CILIUM_VERSION} cilium cilium/cilium --namespace kube-system
+              cilium install --version ${ZARF_VAR_CILIUM_VERSION} --values values/cilium-values.yaml
           - wait:
               cluster:
                 kind: Pod
@@ -224,8 +223,11 @@ components:
                 name: "k8s-app=kube-dns"
                 namespace: kube-system
             description: "Wait for CoreDNS to be ready"
-          
-      
+        onFailure:
+          - cmd: k3d cluster delete ${ZARF_VAR_CLUSTER_NAME}
+            description: "Destroy the cluster on failure"
+
+
   - name: cilium-l2-ip-pool
     description: "Create Cilium L2 IP Pool"
     required: true
@@ -240,4 +242,4 @@ components:
             description: "Load network ip base for MetalLB"
             setVariables:
               - name: BASE_IP
-        
+
