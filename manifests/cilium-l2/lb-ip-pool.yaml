@@ -1,0 +1,8 @@
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: "default-pool"
+spec:
+  blocks:
+  - start: "###ZARF_VAR_BASE_IP###.100"
+    stop: "###ZARF_VAR_BASE_IP###.115"

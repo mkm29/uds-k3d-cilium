@@ -1,0 +1,162 @@
+includes:
+  - actions: https://raw.githubusercontent.com/defenseunicorns/uds-common/refs/tags/v1.16.2/tasks/actions.yaml
+
+variables:
+  - name: VERSION
+    default: "v1.32.5-k3s1"
+  - name: IMAGE_NAME
+    default: "rancher/k3s"
+  - name: K3D_EXTRA_ARGS
+    default: ""
+  - name: NGINX_EXTRA_PORTS
+    default: "[]"
+  - name: ARCH
+    default: "${UDS_ARCH}"
+
+tasks:
+  - name: build
+    description: "Build uds-k3d-calico package"
+    actions:
+      - description: "Build UDS K3d package"
+        cmd: "uds zarf package create -a ${ARCH} --confirm --no-progress --skip-sbom"
+
+  - name: deploy
+    description: "Deploy uds-k3d-calico package"
+    actions:
+      - description: "Deploy UDS K3d package"
+        cmd: |
+          uds zarf package deploy zarf-package-uds-k3d-calico-${ARCH}-*.tar.zst \
+            --set K3D_IMAGE=${IMAGE_NAME}:${VERSION} \
+            --set K3D_EXTRA_ARGS="${K3D_EXTRA_ARGS}" \
+            --set NGINX_EXTRA_PORTS="${NGINX_EXTRA_PORTS}" \
+            --no-progress --confirm
+
+  - name: destroy
+    description: "Destroy the k3d cluster"
+    actions:
+      - description: "Destroy k3d cluster or list existing clusters"
+        cmd: |
+          # Check if a specific cluster name was provided
+          cluster_name="${CLUSTER_NAME:-}"
+
+          if [ -n "$cluster_name" ]; then
+            # Delete specific cluster
+            echo "Deleting cluster: $cluster_name"
+            k3d cluster delete "$cluster_name"
+          else
+            # List all k3d clusters
+            echo "No CLUSTER_NAME provided. Listing existing k3d clusters:"
+            echo ""
+            k3d cluster list
+            echo ""
+            echo "To delete a specific cluster, run:"
+            echo "  uds run destroy --set CLUSTER_NAME=<cluster-name>"
+            echo ""
+            echo "Example:"
+            echo "  uds run destroy --set CLUSTER_NAME=uds-calico"
+          fi
+
+  - name: validate
+    description: "Validate the uds-k3d-calico package"
+    actions:
+      - task: validate-coredns
+      - cmd: uds zarf tools download-init --no-progress
+        description: "Download the zarf init package"
+      - task: validate-zarf-init
+
+  - name: validate-airgap
+    description: "Validate the uds-k3d-calico package in airgap mode"
+    actions:
+      - task: validate-coredns
+      - task: validate-zarf-init
+
+  - name: validate-coredns
+    description: "Validate CoreDNS is up and resolving *.uds.dev"
+    actions:
+      - description: Validate coredns is up
+        wait:
+          cluster:
+            kind: Pod
+            name: "k8s-app=kube-dns"
+            namespace: kube-system
+            condition: Ready
+      - description: Validate coredns is resolving *.uds.dev internally
+        cmd: |
+          set -e
+          # renovate: datasource=docker depName=quay.io/nginx/nginx-unprivileged versioning=docker
+          FOO_IP=$(kubectl run test --image=quay.io/nginx/nginx-unprivileged:1.28.0-alpine -q --restart=Never --rm -i -- sh -c "getent hosts foo.uds.dev | awk '{print \$1}'")
+          if [ "${FOO_IP}" != "127.0.0.1" ]; then
+            echo "CoreDNS is resolving foo.uds.dev to host.k3d.internal"
+          else
+            echo "CoreDNS patch failed, foo.uds.dev is resolving to 127.0.0.1"
+            exit 1
+          fi
+
+  - name: validate-zarf-init
+    description: "Validate zarf init"
+    actions:
+      - description: Validate zarf init
+        cmd: |
+          set -e
+          # Test zarf init due to containerd issue - https://github.com/defenseunicorns/zarf/issues/592
+          uds zarf init --confirm --no-progress
+
+  - name: build-airgap-package
+    description: "Build the airgap package for uds-k3d-calico"
+    actions:
+      - description: Build the airgap package
+        cmd: |
+          uds zarf package create -a ${ARCH} --flavor airgap --confirm --no-progress \
+            --set K3S_VERSION="${VERSION}" --skip-sbom
+
+      - description: Clean up airgap images
+        task: clean-airgap-images
+
+  - name: deploy-airgap-package
+    description: "Deploy the airgap package for uds-k3d-calico"
+    actions:
+      - description: Deploy the airgap package
+        cmd: |
+          uds zarf package deploy zarf-package-uds-k3d-calico-${ARCH}-*.tar.zst --no-progress --confirm
+
+  - name: clean-airgap-images
+    description: "Clean up airgap images after deployment"
+    actions:
+      - description: Remove airgap images
+        cmd: |
+          rm airgap/k3d/*.tar
+          rm airgap/k3d/*.tar.zst
+          rm airgap/cilium/*.tar
+          rm airgap/cilium/*.tar.zst
+
+  - name: connectivity-test
+    required: false
+    description: "Test connectivity across nodes"
+    actions:
+      - description: "Deploy connectivity test resources"
+        cmd: |
+          ./zarf tools kubectl apply -f manifests/connectivity/
+          ./zarf tools kubectl wait --for=condition=available --timeout=60s -n default deployment/nginx
+          ./zarf tools kubectl wait --for=condition=ready --timeout=60s -n default pod/busybox
+      - description: "Test pod-to-pod connectivity"
+        cmd: |
+          echo "Testing connectivity between pods across nodes..."
+          if ./zarf tools kubectl exec -n default busybox -- wget --spider -S http://nginx.default.svc.cluster.local 2>&1 | grep "HTTP/" | grep -q "200"; then
+            echo "✅ Connectivity test PASSED - HTTP 200 received"
+            echo "Pods are running on the following nodes:"
+            ./zarf tools kubectl get pod busybox -o jsonpath='{.spec.nodeName}' && echo " <- busybox"
+            ./zarf tools kubectl get pods -l app=nginx -o jsonpath='{.items[0].spec.nodeName}' && echo " <- nginx"
+          else
+            echo "❌ Connectivity test FAILED - HTTP 200 not received"
+          fi
+          echo
+          echo "Checking LoadBalancer service external IP..."
+          if ./zarf tools kubectl get svc nginx-lb -o jsonpath='{.status.loadBalancer.ingress[0].ip}'; then
+            echo "✅ LoadBalancer service has an external IP"
+          else
+            echo "❌ LoadBalancer service does not have an external IP"
+          fi
+      - description: "Clean up connectivity test resources"
+        cmd: |
+          echo "Cleaning up test resources..."
+          ./zarf tools kubectl delete -f manifests/connectivity/

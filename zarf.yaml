@@ -1,0 +1,243 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/defenseunicorns/zarf/main/zarf.schema.json
+
+kind: ZarfPackageConfig
+metadata:
+  name: uds-k3d-cilium
+  description: "UDS K3d Cluster Setup with Cilium (eBPF). WARNING: This will destroy the cluster if it already exists."
+  url: https://github.com/mkm29/uds-k3d-cilium.git
+  yolo: true
+  # x-release-please-start-version
+  version: "0.1.0"
+  # x-release-please-end
+
+variables:
+  - name: CLUSTER_NAME
+    description: "Name of the cluster"
+    default: "uds-cilium"
+
+  - name: SUBNET_CIDR
+    description: "Subnet CIDR for the cluster"
+    default: "10.0.0.0/16"
+
+  - name: POD_CIDR
+    description: "Pod CIDR for the cluster"
+    default: "10.1.0.0/16"
+
+  - name: SERVICE_CIDR
+    description: "Service CIDR for the cluster"
+    default: "10.96.0.0/12"
+
+  - name: K3D_IMAGE
+    description: "K3d image to use"
+    default: "rancher/k3s:v1.32.5-k3s1"
+
+  - name: K3D_EXTRA_ARGS
+    description: "Optionally pass k3d arguments to the default"
+    default: ""
+
+  - name: NGINX_EXTRA_PORTS
+    description: "Optionally allow more ports through Nginx (combine with K3D_EXTRA_ARGS '-p <port>:<port>@server:*')"
+    default: "[]"
+
+  - name: DOMAIN
+    description: "Cluster domain"
+    default: "uds.dev"
+
+  - name: ADMIN_DOMAIN
+    description: "Domain for admin services, defaults to `admin.DOMAIN`"
+
+  - name: NUMBER_OF_SERVERS
+    description: "Number of server nodes"
+    default: "1"
+
+  - name: NUMBER_OF_AGENTS
+    description: "Number of worker nodes"
+    default: "2"
+
+  - name: EXTRA_TLS_SANS
+    description: "Additional TLS SANs for the cluster (comma-separated)"
+    default: "127.0.0.1"
+
+  - name: DOCKER_HUB_USERNAME
+    description: "Username for Docker Hub registry authentication"
+    prompt: true
+    sensitive: true
+
+  - name: DOCKER_HUB_PASSWORD
+    description: "Password for Docker Hub registry authentication"
+    prompt: true
+    sensitive: true
+
+  - name: CILIUM_VERSION
+    description: "Version of the Tigera Operator to use"
+    default: "v1.17.4"
+
+components:
+  - name: destroy-cluster
+    required: true
+    description: "Optionally destroy the cluster before creating it"
+    actions:
+      onDeploy:
+        before:
+          - cmd: k3d cluster delete ${ZARF_VAR_CLUSTER_NAME}
+            description: "Destroy the cluster"
+
+  - name: k3d-airgap-images
+    required: true
+    only:
+      flavor: airgap
+    description: "Load the airgap images for k3d into Docker"
+    import:
+      path: airgap/k3d
+      name: k3d-airgap-images
+
+  - name: create-cluster-airgap
+    required: true
+    only:
+      flavor: airgap
+    actions:
+      onDeploy:
+        before:
+          - cmd: |
+              echo ""
+              echo "###################################################"
+              echo "#                                                 #"
+              echo "#      PACKAGE BEING DEPLOYED IN AIRGAP MODE      #"
+              echo "#    THIS IS NOT MEANT TO BE USED IN PRODUCTION   #"
+              echo "#                                                 #"
+              echo "###################################################"
+              echo ""
+          - cmd: echo "true"
+            description: "Set AIRGAP_MODE to true"
+            mute: true
+            setVariables:
+              - name: AIRGAP_MODE
+
+  - name: create-cluster
+    required: true
+    description: "Create the k3d cluster and install Cilium with eBPF (kube-proxy replacement)"
+    actions:
+      onDeploy:
+        before:
+          - cmd: |
+              k3d_version=$(k3d version | grep -E -o "([0-9]+\.?){3}$")
+              required_version="5.7.1"
+              if ! printf "$required_version\n$k3d_version" | sort -V -c 2>/dev/null; then
+                echo "This package requires a minimum k3d version of $required_version"
+                echo "Please upgrade k3d (https://k3d.io/stable/#install-current-latest-release) and try again"
+                exit 1
+              fi
+            description: "Check k3d version compatibility"
+          - description: "Check cilum CLI version compatibility"
+            cmd: |
+              cilium_version=$(cilium version | grep -E -o "([0-9]+\.?){3}$")
+              required_version="1.17.0"
+              if ! printf "$required_version\n$cilium_version" | sort -V -c 2>/dev/null; then
+                echo "This package requires a minimum Cilium CLI version of $required_version"
+                echo "Please upgrade Cilium CLI (https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/#install-cilium-cli) and try again"
+                exit 1
+              else
+                echo "Cilium CLI version $cilium_version is compatible"
+              fi
+          - cmd: |
+              # Process registries template only if credentials are provided
+              if [ -n "${ZARF_VAR_DOCKER_HUB_USERNAME}" ] && [ -n "${ZARF_VAR_DOCKER_HUB_PASSWORD}" ]; then
+                sed -e "s|###ZARF_VAR_DOCKER_HUB_USERNAME###|${ZARF_VAR_DOCKER_HUB_USERNAME}|g" \
+                    -e "s|###ZARF_VAR_DOCKER_HUB_PASSWORD###|${ZARF_VAR_DOCKER_HUB_PASSWORD}|g" \
+                    registries.yaml.tmpl > registries.yaml
+                echo "Registry configuration created with Docker Hub credentials"
+              else
+                # Remove any existing registries.yaml to ensure clean state
+                rm -f registries.yaml
+                echo "No Docker Hub credentials provided, skipping registry configuration"
+              fi
+            description: "Process registry configuration"
+          - cmd: |
+              VOLUME_MOUNT=""
+              REGISTRY_CONFIG=""
+
+              # Set up airgap volume if in airgap mode
+              if [ "${ZARF_VAR_AIRGAP_MODE}" = "true" ]; then
+                # renovate: datasource=docker depName=ghcr.io/k3d-io/k3d-tools
+                export K3D_HELPER_IMAGE_TAG=5.8.3
+                VOLUME_MOUNT="--volume k3s-airgap-images:/var/lib/rancher/k3s/agent/images"
+              fi
+
+              # Add registry config only if registries.yaml exists
+              if [ -f "registries.yaml" ]; then
+                REGISTRY_CONFIG="--registry-config ${PWD}/registries.yaml"
+              fi
+
+              k3d cluster create \
+              -p "80:80@server:*" \
+              -p "443:443@server:*" \
+              --k3s-arg "--tls-san=${ZARF_VAR_EXTRA_TLS_SANS}@server:*" \
+              --k3s-arg "--flannel-backend=none@server:*" \
+              --k3s-arg "--disable=traefik@server:*" \
+              --k3s-arg "--disable=servicelb@server:*" \
+              --k3s-arg "--disable-network-policy@server:*" \
+              --k3s-arg "--cluster-cidr=${ZARF_VAR_POD_CIDR}@server:*" \
+              --k3s-arg "--service-cidr=${ZARF_VAR_SERVICE_CIDR}@server:*" \
+              --servers ${ZARF_VAR_NUMBER_OF_SERVERS} \
+              --agents ${ZARF_VAR_NUMBER_OF_AGENTS} \
+              --subnet ${ZARF_VAR_SUBNET_CIDR} \
+              --image ${ZARF_VAR_K3D_IMAGE} ${ZARF_VAR_K3D_EXTRA_ARGS} \
+              ${REGISTRY_CONFIG} \
+              ${VOLUME_MOUNT} \
+              ${ZARF_VAR_CLUSTER_NAME}
+            description: "Create the cluster"
+        after:
+          - description: "Patching nodes to mount BPF filesystem"
+            cmd: |
+              for node in $(kubectl get nodes -o jsonpath='{.items[*].metadata.name}'); do 
+                echo "Configuring mounts for $node";
+                docker exec -i "$node" /bin/sh -c ' \
+                  mount bpffs -t bpf /sys/fs/bpf && \
+                  mount --make-shared /sys/fs/bpf && \
+                  mkdir -p /run/cilium/cgroupv2 && \
+                  mount -t cgroup2 none /run/cilium/cgroupv2 && \
+                  mount --make-shared /run/cilium/cgroupv2/ \
+                ';
+              done
+          - description: Install Cilium with eBPF
+            cmd: |
+              ./zarf tools helm repo add cilium https://helm.cilium.io/ --force-update
+              ./zarf tools helm install -f values/cilium-values.yaml --version ${ZARF_VAR_CILIUM_VERSION} cilium cilium/cilium --namespace kube-system
+          - wait:
+              cluster:
+                kind: Pod
+                condition: Ready
+                name: "k8s-app=cilium"
+                namespace: kube-system
+            description: "Wait for Cilium Pods to be ready"
+          - wait:
+              cluster:
+                kind: Pod
+                condition: Ready
+                name: "k8s-app=hubble-relay"
+                namespace: kube-system
+            description: "Wait for Hubble Relay to be available"
+          - wait:
+              cluster:
+                kind: Pod
+                condition: Ready
+                name: "k8s-app=kube-dns"
+                namespace: kube-system
+            description: "Wait for CoreDNS to be ready"
+          
+      
+  - name: cilium-l2-ip-pool
+    description: "Create Cilium L2 IP Pool"
+    required: true
+    manifests:
+      - name: lb-ip-pool
+        kustomizations:
+          - manifests/cilium-l2
+    actions:
+      onDeploy:
+        before:
+          - cmd: ./zarf tools kubectl get nodes -o=jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' | cut -d'.' -f1-3
+            description: "Load network ip base for MetalLB"
+            setVariables:
+              - name: BASE_IP
+        

@@ -1,0 +1,42 @@
+hubble:
+  enabled: true
+  metrics:
+    enabled:
+    - dns:query;ignoreAAAA
+    - drop
+    - tcp
+    - flow
+    - icmp
+    - http
+    dashboards:
+      enabled: true
+    serviceMonitor:
+      enabled: true
+  relay:
+    prometheus:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+
+prometheus:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+dashboards:
+  enabled: true
+
+operator:
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+  dashboards:
+    enabled: true
+envoy:
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+monitor:
+  enabled: true

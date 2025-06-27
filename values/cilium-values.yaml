@@ -1,0 +1,126 @@
+bpf:
+  masquerade: false
+
+cluster:
+  name: k3d-cilium
+  id: 99
+
+cni:
+  exclusive: false
+
+kubeProxyReplacement: true
+
+l2announcements:
+  # -- Enable L2 announcements
+  enabled: true
+
+l2podAnnouncements:
+  # -- Enable L2 pod announcements
+  enabled: false
+  # -- Interface used for sending Gratuitous ARP pod announcements
+  interface: "eth0"
+
+hubble:
+  enabled: true
+  metrics:
+    enabled:
+    - dns:query;ignoreAAAA
+    - drop
+    - tcp
+    - flow
+    - icmp
+    - http
+    dashboards:
+      enabled: false
+    serviceMonitor:
+      enabled: false
+  relay:
+    enabled: true
+    prometheus:
+      enabled: false
+      serviceMonitor:
+        enabled: false
+  tls:
+    auto:
+      enabled: true
+      method: "helm"
+      certValidityDuration: 1095
+  ui:
+    enabled: true
+
+ingressController:
+  enabled: true
+  default: true
+
+authentication:
+  mutual:
+    spire:
+      enabled: true
+      install:
+        enabled: true
+        server:
+          dataStorage:
+            enabled: true
+
+encryption:
+  enabled: true
+  type: wireguard
+  nodeEncryption: true
+  strictMode:
+    enabled: false
+
+
+prometheus:
+  enabled: false
+  serviceMonitor:
+    enabled: false
+dashboards:
+  enabled: false
+
+
+# version: 1.17.4
+operator:
+  replicas: 1
+  prometheus:
+    enabled: false
+    serviceMonitor:
+      enabled: false
+  dashboards:
+    enabled: false
+envoy:
+  prometheus:
+    enabled: false
+    serviceMonitor:
+      enabled: false
+    service:
+      type: NodePort
+#     # tls:
+#     #   authMode: cluster
+#     #   server:
+#     #     extraDnsNames:
+#     #       - "*.{{ cilium_default_domain }}"
+
+ipam:
+  mode: kubernetes
+
+externalIPs:
+  enabled: true
+nodePort:
+  enabled: true
+hostPort:
+  enabled: true
+socketLB:
+  enabled: true
+  hostNamespaceOnly: true
+ipv4:
+  enabled: true
+ipv4NativeRoutingCIDR: "10.0.0.0/9"
+
+# monitor:
+#   # -- Enable the cilium-monitor sidecar.
+#   enabled: true
+
+# loadBalancer:
+#   nodePort:
+#     # -- Enable the Cilium NodePort service implementation.
+#     enabled: true

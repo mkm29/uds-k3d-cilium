@@ -1,0 +1,68 @@
+kind: ZarfPackageConfig
+metadata:
+  name: cilium-airgap-images
+  yolo: true
+  description: >
+    *** REQUIRES DOCKER AND K3D CLUSTER ***
+    Loads the required images for deploying Cilium CNI into k3d to be used offline.
+
+components:
+  - name: cilium-airgap-images
+    files:
+      - source: spiffe-agent.tar
+        target: cilium/spiffe-agent.tar
+      - source: spiffe-server.tar
+        target: cilium/spiffe-server.tar
+      - source: cilium-envoy.tar
+        target: cilium/cilium-envoy.tar
+      - source: cilium.tar
+        target: cilium/cilium.tar
+      - source: operator-generic.tar
+        target: cilium/operator-generic.tar
+      - source: cilium.tar
+        target: cilium/cilium.tar
+      - source: hubble-relay.tar
+        target: cilium/hubble-relay.tar
+      - source: hubble-ui.tar
+        target: cilium/hubble-ui.tar
+      - source: hubble-ui-backend.tar
+        target: cilium/hubble-ui-backend.tar
+      - source: busybox.tar
+        target: busybox.tar
+    actions:
+      onCreate:
+        before:
+          - cmd: ./zarf tools registry pull --platform linux/"###ZARF_PKG_ARCH###" ghcr.io/spiffe/spire-agent:1.9.6 spiffe-agent.tar
+            description: Pull the spiffe-agent image
+          - cmd: ./zarf tools registry pull --platform linux/"###ZARF_PKG_ARCH###" docker.io/library/busybox:1.37.0 busybox.tar
+            description: Pull the busybox image
+          - cmd: ./zarf tools registry pull --platform linux/"###ZARF_PKG_ARCH###" ghcr.io/spiffe/spire-server:1.9.6 spiffe-server.tar
+            description: Pull the spiffe-server image
+          - cmd: ./zarf tools registry pull --platform linux/"###ZARF_PKG_ARCH###" quay.io/cilium/cilium-envoy:v1.32.6-1746661844-0f602c28cb2aa57b29078195049fb257d5b5246c cilium-envoy.tar
+            description: Pull the cilium-envoy image
+          - cmd: ./zarf tools registry pull --platform linux/"###ZARF_PKG_ARCH###" quay.io/cilium/cilium:v1.17.4 cilium.tar
+            description: Pull the cilium image
+          - cmd: ./zarf tools registry pull --platform linux/"###ZARF_PKG_ARCH###" quay.io/cilium/operator-generic:v1.17.4 operator-generic.tar
+            description: Pull the operator-generic image
+          - cmd: ./zarf tools registry pull --platform linux/"###ZARF_PKG_ARCH###" quay.io/cilium/hubble-relay:v1.17.4 hubble-relay.tar
+            description: Pull the hubble-relay image
+          - cmd: ./zarf tools registry pull --platform linux/"###ZARF_PKG_ARCH###" quay.io/cilium/hubble-ui:v0.13.2 hubble-ui.tar
+            description: Pull the hubble-ui image
+          - cmd: ./zarf tools registry pull --platform linux/"###ZARF_PKG_ARCH###" quay.io/cilium/hubble-ui-backend:v0.13.2 hubble-ui-backend.tar
+            description: Pull the hubble-ui-backend image
+      onDeploy:
+        after:
+          - cmd: |
+              k3d image load spiffe-agent.tar \
+                busybox.tar \
+                spiffe-server.tar \
+                cilium-envoy.tar \
+                cilium.tar \
+                operator-generic.tar \
+                hubble-relay.tar \
+                hubble-ui.tar \
+                hubble-ui-backend.tar \
+              -c ${ZARF_VAR_CLUSTER_NAME}
+            description: Load the Cilium images into the k3d cluster
+          - cmd: rm spiffe-agent.tar busybox.tar spiffe-server.tar cilium-envoy.tar cilium.tar operator-generic.tar hubble-relay.tar hubble-ui.tar hubble-ui-backend.tar
+            description: Clean up the Cilium image tarballs
