@@ -8,6 +8,7 @@ This zarf package serves as a base for standing up a multi-mode Kubernetes clust
 - [UDS k3d Cilium Zarf Package](#uds-k3d-cilium-zarf-package)
   - [Overview](#overview)
   - [Prerequisites](#prerequisites)
+    - [Required CLI Tools](#required-cli-tools)
     - [System Requirements](#system-requirements)
   - [Architecture](#architecture)
   - [Configuration](#configuration)
@@ -61,17 +62,19 @@ The UDS k3d Cilium package creates a k3d cluster with the following features:
 ### Required CLI Tools
 
 The following tools are required and can be installed individually or via the provided OCI artifact:
+
 - [UDS CLI](https://uds.defenseunicorns.com/reference/cli/quickstart-and-usage/#install): version 0.20.0 or later
 - [k3d](https://k3d.io/#installation): version 5.7.1 or later
 - [Cilium CLI](https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/#install-cilium-cli): version 0.16.0 or later
 
 **Quick Install via OCI Artifact:**
+
 ```bash
 # Install all required tools at once (auto-detects OS and architecture)
-curl -sL https://raw.githubusercontent.com/mkm29/uds-k3d-cilium/main/tools/install.sh | bash
+curl -sL https://raw.githubusercontent.com/mkm29/uds-tooling/main/tools/install.sh | bash
 
 # Or specify a custom install path
-curl -sL https://raw.githubusercontent.com/mkm29/uds-k3d-cilium/main/tools/install.sh | INSTALL_PATH=/usr/local/bin bash
+curl -sL https://raw.githubusercontent.com/mkm29/uds-tooling/main/tools/install.sh | INSTALL_PATH=/usr/local/bin bash
 ```
 
 ### System Requirements
@@ -87,27 +90,27 @@ graph TB
     subgraph host[Host Machine]
         DOCKER[Docker/Podman]
         UDS[UDS CLI]
-        
+
         subgraph k3d_cluster[k3d Cluster - uds-cilium]
             subgraph control_plane[Control Plane Node]
                 SERVER[k3d-uds-cilium-server-0<br/>K3s API Server<br/>Controller Manager<br/>Scheduler<br/>etcd]
             end
-            
+
             subgraph worker1[Worker Node 1]
                 AGENT0[k3d-uds-cilium-agent-0<br/>kubelet]
                 CILIUM_AGENT0[cilium-agent<br/>eBPF + Kube-proxy replacement]
             end
-            
+
             subgraph worker2[Worker Node 2]
                 AGENT1[k3d-uds-cilium-agent-1<br/>kubelet]
                 CILIUM_AGENT1[cilium-agent<br/>eBPF + Kube-proxy replacement]
             end
-            
+
             subgraph networking[Cluster Networking]
                 CILIUM[Cilium CNI v1.17.4<br/>Pod Networking & Policies<br/>L2 Announcements]
                 REGISTRY[k3d Registry<br/>:5000]
             end
-            
+
             subgraph services[Core Services]
                 COREDNS[CoreDNS<br/>DNS for *.uds.dev]
                 CILIUM_INGRESS[Cilium Ingress<br/>Controller]
@@ -115,7 +118,7 @@ graph TB
                 HUBBLE_UI[Hubble UI<br/>Network Observability]
                 SPIRE[SPIRE<br/>Service Identity]
             end
-            
+
             subgraph cilium_mgmt[Cilium Management]
                 OPERATOR[Cilium Operator]
                 HUBBLE_RELAY[Hubble Relay]
@@ -123,26 +126,26 @@ graph TB
             end
         end
     end
-    
+
     UDS -->|Deploy| DOCKER
     DOCKER -->|Create| control_plane
     DOCKER -->|Create| worker1
     DOCKER -->|Create| worker2
-    
+
     control_plane -->|Manages| worker1
     control_plane -->|Manages| worker2
-    
+
     OPERATOR -->|Manages| CILIUM_AGENT0
     OPERATOR -->|Manages| CILIUM_AGENT1
     OPERATOR -->|Manages| L2_POOL
-    
+
     CILIUM -->|eBPF Programs| CILIUM_AGENT0
     CILIUM -->|eBPF Programs| CILIUM_AGENT1
-    
+
     HUBBLE_RELAY -->|Collects Metrics| CILIUM_AGENT0
     HUBBLE_RELAY -->|Collects Metrics| CILIUM_AGENT1
     HUBBLE_UI -->|Queries| HUBBLE_RELAY
-    
+
     style SERVER fill:#2196f3
     style AGENT0 fill:#90caf9
     style AGENT1 fill:#90caf9
@@ -153,6 +156,7 @@ graph TB
 ```
 
 For detailed architecture diagrams and component descriptions, see:
+
 - [Cilium CNI Documentation](docs/CILIUM.md) - Complete Cilium architecture and component details
 - [eBPF Dataplane Documentation](docs/EBPF.md) - eBPF dataplane architecture and traffic flow
 
@@ -187,7 +191,6 @@ The following components are available in the UDS k3d Cilium package:
 
 > [!NOTE]
 > Cilium provides built-in L2 announcements for LoadBalancer services, replacing the need for MetalLB. The Cilium Ingress Controller is enabled by default.
-
 > [!IMPORTANT]
 > The package uses the Cilium CLI for installation rather than Helm, as `zarf tools helm` only includes repo and dependency management commands, not the full Helm CLI functionality. Ensure the Cilium CLI is installed before deployment.
 
@@ -407,13 +410,17 @@ package:
 This package is designed to work seamlessly with [UDS Core](https://github.com/defenseunicorns/uds-core). Key integration points:
 
 ### Istio CNI Compatibility
+
 Cilium is configured with `cni.exclusive: false` to enable CNI chaining with Istio CNI. This allows:
+
 - Istio ambient mesh to function properly
 - Istio CNI to inject its eBPF programs alongside Cilium's
 - Proper sidecar injection for Istio-enabled workloads
 
 ### Bundle Configuration
+
 The included `uds-bundle.yaml` demonstrates proper CNI path configuration for UDS Core components:
+
 - `CNI_BIN_DIR`: `/opt/cni/bin` - Directory for CNI binaries
 - `CNI_CONF_DIR`: `/etc/cni/net.d` - Directory for CNI configuration files
 
