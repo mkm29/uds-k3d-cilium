@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2025-06-28
+
+### Added
+
+- **CLI Tools Distribution System**: New comprehensive system for building and distributing CLI tools
+  - Docker-based multi-platform image supporting linux/amd64, linux/arm64, darwin/amd64, darwin/arm64
+  - ORAS (OCI Registry As Storage) artifact support for direct file distribution
+  - Automatic tool installer script with platform detection
+  - Bundled tools: UDS CLI (v0.27.7), Helm (v3.18.3), Cilium CLI (v0.18.4), Hubble CLI (v1.17.5), k3d (v5.8.3), kubectl (v1.33.2), k9s (v0.50.6)
+
+- **Authentication Improvements**:
+  - Automatic GitHub Container Registry (ghcr.io) authentication using CR_PAT environment variable
+  - Unified authentication logic abstracted into `common.sh` for code reuse
+  - Support for both Docker and ORAS authentication methods
+
+- **ORAS Artifact Support**:
+  - Platform-specific ORAS artifacts with proper file annotations
+  - Each binary is a separate layer with metadata for efficient pulling
+  - Linux-only artifacts (linux/amd64, linux/arm64) following OCI container conventions
+  - Platform-specific tags (e.g., `v1.0.1-linux-amd64`) due to ORAS index limitations
+
+- **Installation Features**:
+  - Auto-installation of ORAS CLI if not present
+  - Automatic jq installation for JSON parsing
+  - Intelligent detection of Docker images vs ORAS artifacts
+  - Fallback mechanisms for different artifact types
+
+### Changed
+
+- **Script Organization**:
+  - Created `tools/common.sh` with shared functions for authentication, downloads, and platform detection
+  - Refactored all tool scripts to use common functions, reducing code duplication
+  - Improved error handling and user feedback across all scripts
+
+### Technical Notes
+
+- ORAS 1.2.3 doesn't support `manifest index create` command, so platform-specific tags are used instead of multi-platform indices
+- Docker images support all platforms while ORAS artifacts are Linux-only (containers run on Linux)
+
 ## [0.1.1] - 2025-06-27
 
 ### Fixed

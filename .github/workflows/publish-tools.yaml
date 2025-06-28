@@ -1,0 +1,118 @@
+name: Publish Tools OCI Artifact
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'tools/**'
+      - '.github/workflows/publish-tools.yaml'
+  pull_request:
+    paths:
+      - 'tools/**'
+      - '.github/workflows/publish-tools.yaml'
+  workflow_dispatch:
+    inputs:
+      uds_version:
+        description: 'UDS CLI version'
+        required: false
+        default: 'v0.20.0'
+      helm_version:
+        description: 'Helm version'
+        required: false
+        default: 'v3.16.3'
+      cilium_version:
+        description: 'Cilium CLI version'
+        required: false
+        default: 'v0.16.22'
+      hubble_version:
+        description: 'Hubble CLI version'
+        required: false
+        default: 'v1.17.5'
+      k3d_version:
+        description: 'k3d version'
+        required: false
+        default: 'v5.8.3'
+      kubectl_version:
+        description: 'kubectl version'
+        required: false
+        default: 'v1.33.2'
+      k9s_version:
+        description: 'k9s version'
+        required: false
+        default: 'v0.50.6'
+
+env:
+  REGISTRY: ghcr.io
+  NAMESPACE: ${{ github.repository_owner }}
+  REPOSITORY: uds-k3d-cilium-tools
+
+jobs:
+  publish-tools:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Install ORAS
+        run: |
+          VERSION="1.2.0"
+          curl -sL "https://github.com/oras-project/oras/releases/download/v${VERSION}/oras_${VERSION}_linux_amd64.tar.gz" | \
+          tar -xz -C /tmp
+          sudo mv /tmp/oras /usr/local/bin/
+          oras version
+      
+      - name: Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | oras login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+      
+      - name: Set tool versions
+        run: |
+          echo "UDS_VERSION=${{ inputs.uds_version || 'v0.20.0' }}" >> $GITHUB_ENV
+          echo "HELM_VERSION=${{ inputs.helm_version || 'v3.16.3' }}" >> $GITHUB_ENV
+          echo "CILIUM_CLI_VERSION=${{ inputs.cilium_version || 'v0.16.22' }}" >> $GITHUB_ENV
+          echo "HUBBLE_VERSION=${{ inputs.hubble_version || 'v1.17.5' }}" >> $GITHUB_ENV
+          echo "K3D_VERSION=${{ inputs.k3d_version || 'v5.8.3' }}" >> $GITHUB_ENV
+          echo "KUBECTL_VERSION=${{ inputs.kubectl_version || 'v1.33.2' }}" >> $GITHUB_ENV
+          echo "K9S_VERSION=${{ inputs.k9s_version || 'v0.50.6' }}" >> $GITHUB_ENV
+      
+      - name: Build and Push Tools Artifact
+        if: github.event_name != 'pull_request'
+        run: |
+          cd tools
+          REGISTRY=${{ env.REGISTRY }} \
+          NAMESPACE=${{ env.NAMESPACE }} \
+          REPOSITORY=${{ env.REPOSITORY }} \
+          TAG=latest \
+          UDS_VERSION=${{ env.UDS_VERSION }} \
+          HELM_VERSION=${{ env.HELM_VERSION }} \
+          CILIUM_CLI_VERSION=${{ env.CILIUM_CLI_VERSION }} \
+          HUBBLE_VERSION=${{ env.HUBBLE_VERSION }} \
+          K3D_VERSION=${{ env.K3D_VERSION }} \
+          KUBECTL_VERSION=${{ env.KUBECTL_VERSION }} \
+          K9S_VERSION=${{ env.K9S_VERSION }} \
+          ./build-tools-artifact.sh
+      
+      - name: Build Tools Artifact (Dry Run)
+        if: github.event_name == 'pull_request'
+        run: |
+          cd tools
+          # Just download and package, don't push
+          for arch in amd64 arm64; do
+            ./build-tools-artifact.sh download_tools $arch
+          done
+          echo "✅ Tools artifact build successful (dry run)"
+      
+      - name: Create Release Artifact
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "📦 Tools artifact published to:"
+          echo "   ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ env.REPOSITORY }}:latest"
+          echo ""
+          echo "To use:"
+          echo "   oras pull ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ env.REPOSITORY }}:latest"

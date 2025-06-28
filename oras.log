@@ -1,0 +1,169 @@
+Building ORAS artifact with CLI tools...
+Artifact: ghcr.io/mkm29/uds-k3d-cilium/tools:v1.0.1
+
+Tool versions:
+  UDS CLI: v0.27.7
+  Helm: v3.18.3
+  Cilium CLI: v0.18.4
+  Hubble CLI: v1.17.5
+  k3d: v5.8.3
+  kubectl: v1.33.2
+  k9s: v0.50.6
+
+Checking GitHub Container Registry authentication...
+
+⚠️  Not authenticated to GitHub Container Registry
+
+🔐 Attempting automatic login using CR_PAT environment variable...
+✓ Successfully authenticated to GitHub Container Registry
+
+
+📦 Downloading tools for Linux platforms...
+
+=== Downloading tools for linux/amd64 ===
+    Tool directory: /var/folders/28/m7gm_18956vc6yqrg114c9wh0000gn/T/tmp.8MzGea148w/linux-amd64
+  📥 UDS CLI v0.27.7...
+  Downloading from: https://github.com/defenseunicorns/uds-cli/releases/download/v0.27.7/uds-cli_v0.27.7_linux_amd64
+############################################################################################################################ 100.0%
+  📥 Helm v3.18.3...
+  Downloading from: https://get.helm.sh/helm-v3.18.3-linux-amd64.tar.gz
+############################################################################################################################ 100.0%
+  📥 Cilium CLI v0.18.4...
+  Downloading from: https://github.com/cilium/cilium-cli/releases/download/v0.18.4/cilium-linux-amd64.tar.gz
+############################################################################################################################ 100.0%
+  📥 Hubble CLI v1.17.5...
+  Downloading from: https://github.com/cilium/hubble/releases/download/v1.17.5/hubble-linux-amd64.tar.gz
+############################################################################################################################ 100.0%
+  📥 k3d v5.8.3...
+  Downloading from: https://github.com/k3d-io/k3d/releases/download/v5.8.3/k3d-linux-amd64
+############################################################################################################################ 100.0%
+  📥 kubectl v1.33.2...
+  Downloading from: https://dl.k8s.io/release/v1.33.2/bin/linux/amd64/kubectl
+############################################################################################################################ 100.0%
+  📥 k9s v0.50.6...
+  Downloading from: https://github.com/derailed/k9s/releases/download/v0.50.6/k9s_linux_amd64.tar.gz
+############################################################################################################################ 100.0%
+  ✅ Downloaded all tools for linux/amd64
+
+=== Downloading tools for linux/arm64 ===
+    Tool directory: /var/folders/28/m7gm_18956vc6yqrg114c9wh0000gn/T/tmp.8MzGea148w/linux-arm64
+  📥 UDS CLI v0.27.7...
+  Downloading from: https://github.com/defenseunicorns/uds-cli/releases/download/v0.27.7/uds-cli_v0.27.7_linux_arm64
+############################################################################################################################ 100.0%
+  📥 Helm v3.18.3...
+  Downloading from: https://get.helm.sh/helm-v3.18.3-linux-arm64.tar.gz
+############################################################################################################################ 100.0%
+  📥 Cilium CLI v0.18.4...
+  Downloading from: https://github.com/cilium/cilium-cli/releases/download/v0.18.4/cilium-linux-arm64.tar.gz
+############################################################################################################################ 100.0%
+  📥 Hubble CLI v1.17.5...
+  Downloading from: https://github.com/cilium/hubble/releases/download/v1.17.5/hubble-linux-arm64.tar.gz
+############################################################################################################################ 100.0%
+  📥 k3d v5.8.3...
+  Downloading from: https://github.com/k3d-io/k3d/releases/download/v5.8.3/k3d-linux-arm64
+############################################################################################################################ 100.0%
+  📥 kubectl v1.33.2...
+  Downloading from: https://dl.k8s.io/release/v1.33.2/bin/linux/arm64/kubectl
+############################################################################################################################ 100.0%
+  📥 k9s v0.50.6...
+  Downloading from: https://github.com/derailed/k9s/releases/download/v0.50.6/k9s_linux_arm64.tar.gz
+############################################################################################################################ 100.0%
+  ✅ Downloaded all tools for linux/arm64
+
+ℹ️  Note: OCI artifacts only include Linux binaries (containers run on Linux)
+   For macOS/Darwin, use the Docker image directly or download tools separately
+
+🚀 Pushing artifacts to registry...
+
+  📤 Pushing linux/amd64...
+✓ Exists    helm                                                                                        56.9/56.9 MB 100.00%     0s
+  └─ sha256:2071c8ebef6e4249b93f586ea682c9073a8aaf4cd54b9673a2693fc8eda737ee
+✓ Exists    uds                                                                                           156/156 MB 100.00%     0s
+  └─ sha256:e2c74eac5ce1ea43f9212d5b47cede1bd84d42eeef8ac0a7913d7027c84323ab
+✓ Exists    application/vnd.oci.empty.v1+json                                                                 2/2  B 100.00%     0s
+  └─ sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+✓ Exists    cilium                                                                                        146/146 MB 100.00%     0s
+  └─ sha256:aeee345f51fdb870ad1412e234f55a15a68f564294bb91b5a6daa7d6b455e2c6
+✓ Exists    hubble                                                                                      92.7/92.7 MB 100.00%     0s
+  └─ sha256:d2c3987e85e337321eea93d92418256e7807161269f3855c1636f01c4a6e4d1e
+✓ Exists    k9s                                                                                           117/117 MB 100.00%     0s
+  └─ sha256:a18e8f6d095c2d0a4866649170a2880deb6c3b1fad59dcac60c8cbf14741bff8
+✓ Exists    kubectl                                                                                     57.3/57.3 MB 100.00%     0s
+  └─ sha256:33d0cdec6967817468f0a4a90f537dfef394dcf815d91966ca651cc118393eea
+✓ Exists    k3d                                                                                         23.1/23.1 MB 100.00%     0s
+  └─ sha256:dbaa79a76ace7f4ca230a1ff41dc7d8a5036a8ad0309e9c54f9bf3836dbe853e
+✓ Uploaded  UDS k3d Cilium Tools                                                                        2.19/2.19 KB 100.00%  217ms
+  └─ sha256:3037d7feddd097a659a8241d3ac0d4c2673c7a633f4792dc6039db0894daf4de
+Pushed [registry] ghcr.io/mkm29/uds-k3d-cilium/tools:v1.0.1
+ArtifactType: application/vnd.unknown.artifact.v1
+Digest: sha256:3037d7feddd097a659a8241d3ac0d4c2673c7a633f4792dc6039db0894daf4de
+  ✅ Pushed linux/amd64
+
+  📤 Pushing linux/arm64...
+✓ Exists    cilium                                                                                        141/141 MB 100.00%     0s
+  └─ sha256:72af957e0c320756e6d2e3cffa0d8deb62ed4d19fd5ca9f5860ac92ff2305b57
+✓ Exists    application/vnd.oci.empty.v1+json                                                                 2/2  B 100.00%     0s
+  └─ sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+✓ Exists    hubble                                                                                      89.5/89.5 MB 100.00%     0s
+  └─ sha256:c455db4660e06bccdc19ba9fee8e72b9121ebfdf4edb79c21e051aa101faf4c6
+✓ Exists    helm                                                                                        54.7/54.7 MB 100.00%     0s
+  └─ sha256:e127f0e04724c4e2954b30df620dc18269a6df2ec6046c73c45a3366c6826455
+✓ Exists    uds                                                                                           149/149 MB 100.00%     0s
+  └─ sha256:3ed7eecbf872ae42e88e697ca1b007b53e3c976d88ff42d62dbcfc0a6fc4c689
+✓ Exists    k3d                                                                                         22.2/22.2 MB 100.00%     0s
+  └─ sha256:0b8110f2229631af7402fb828259330985918b08fefd38b7f1b788a1c8687216
+✓ Exists    kubectl                                                                                         55/55 MB 100.00%     0s
+  └─ sha256:54dc02c8365596eaa2b576fae4e3ac521db9130e26912385e1e431d156f8344d
+✓ Exists    k9s                                                                                           112/112 MB 100.00%     0s
+  └─ sha256:859237ecca62553ef7b4726cbef636f18f87ffe2b87e49815ace7e1969c36361
+✓ Uploaded  UDS k3d Cilium Tools                                                                        2.19/2.19 KB 100.00%  232ms
+  └─ sha256:7b23e8f1d5f784734e666bd009034c24882a623b7ae8c0bf2bb667e131f4bdea
+Pushed [registry] ghcr.io/mkm29/uds-k3d-cilium/tools:v1.0.1
+ArtifactType: application/vnd.unknown.artifact.v1
+Digest: sha256:7b23e8f1d5f784734e666bd009034c24882a623b7ae8c0bf2bb667e131f4bdea
+  ✅ Pushed linux/arm64
+
+📋 Creating multi-platform index...
+Manifest operations
+
+Usage:
+  oras manifest [command]
+
+Available Commands:
+  delete       Delete a manifest from remote registry
+  fetch        Fetch manifest of the target artifact
+  fetch-config Fetch the config of a manifest from a registry or an OCI image layout
+  push         Push a manifest to a registry or an OCI image layout
+
+Flags:
+  -h, --help   help for manifest
+
+Use "oras manifest [command] --help" for more information about a command.
+Adding annotations to index...
+Manifest operations
+
+Usage:
+  oras manifest [command]
+
+Available Commands:
+  delete       Delete a manifest from remote registry
+  fetch        Fetch manifest of the target artifact
+  fetch-config Fetch the config of a manifest from a registry or an OCI image layout
+  push         Push a manifest to a registry or an OCI image layout
+
+Flags:
+  -h, --help   help for manifest
+
+Use "oras manifest [command] --help" for more information about a command.
+
+✅ Successfully built and pushed ORAS artifact: ghcr.io/mkm29/uds-k3d-cilium/tools:v1.0.1
+
+To use the tools on Linux:
+  oras pull ghcr.io/mkm29/uds-k3d-cilium/tools:v1.0.1 --platform linux/amd64
+  oras pull ghcr.io/mkm29/uds-k3d-cilium/tools:v1.0.1 --platform linux/arm64
+
+Or use the installer script:
+  ./tools/use-tools-artifact.sh
+
+Note: This OCI artifact contains Linux binaries only.
+For macOS/Darwin, use the Docker image or download tools directly.

@@ -56,10 +56,23 @@ The UDS k3d Cilium package creates a k3d cluster with the following features:
 
 ## Prerequisites
 
+- [Docker](https://docs.docker.com/get-docker/) or [Podman](https://podman.io/getting-started/installation) for running k3d
+
+### Required CLI Tools
+
+The following tools are required and can be installed individually or via the provided OCI artifact:
 - [UDS CLI](https://uds.defenseunicorns.com/reference/cli/quickstart-and-usage/#install): version 0.20.0 or later
 - [k3d](https://k3d.io/#installation): version 5.7.1 or later
-- [Cilium CLI](https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/#install-cilium-cli): version 0.16.0 or later (required for installation)
-- [Docker](https://docs.docker.com/get-docker/) or [Podman](https://podman.io/getting-started/installation) for running k3d
+- [Cilium CLI](https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/#install-cilium-cli): version 0.16.0 or later
+
+**Quick Install via OCI Artifact:**
+```bash
+# Install all required tools at once (auto-detects OS and architecture)
+curl -sL https://raw.githubusercontent.com/mkm29/uds-k3d-cilium/main/tools/install.sh | bash
+
+# Or specify a custom install path
+curl -sL https://raw.githubusercontent.com/mkm29/uds-k3d-cilium/main/tools/install.sh | INSTALL_PATH=/usr/local/bin bash
+```
 
 ### System Requirements
 
